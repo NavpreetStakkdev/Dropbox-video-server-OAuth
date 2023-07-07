@@ -5,6 +5,8 @@ const { clearUploadsFolder } = require("../utils/EmptyDirectory");;
 const { dropboxOAuth2, OAuthcache } = require("../utils/OAuth");
 const path = require("path")
 
+var access_token = null
+
 module.exports.Root = async (req, res, next) => {
   const documentation = `
   <br><br>
@@ -118,14 +120,14 @@ module.exports.DropboxAuthCallback = async (req, res, next) => {
       req.session.token = token;
       OAuthcache.del(state);
 
-      let accessToken = token.result.access_token;
+      access_token = token.result.access_token;
 
       // Store the access token securely or use it directly for further Dropbox API calls
       // You can redirect the user to another page or send a response here
       // Save the access token to environment variable
-      process.env.ACCESS_TOKEN = accessToken;
+      process.env.ACCESS_TOKEN = access_token;
 
-      res.send("Authentication successful! " + accessToken);
+      res.send("Authentication successful! " + access_token);
 
       res.redirect("/AuthCheck");
     } catch (error) {
@@ -158,7 +160,7 @@ module.exports.AddVideoToDropbox = async (req, res, next) => {
         saveLocation: saveLocation,
       },
     ],
-    process.env.ACCESS_TOKEN,
+    access_token,
     true
   )
     // upload(files, accessToken, true)
