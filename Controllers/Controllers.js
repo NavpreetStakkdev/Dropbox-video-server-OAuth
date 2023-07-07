@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const { upload } = require("./lib/index");
 const { clearUploadsFolder } = require("../utils/EmptyDirectory");;
 const { dropboxOAuth2, OAuthcache } = require("../utils/OAuth");
-const path = require("path");
+const { base64URLEncode, sha256 } = require("../utils/Helpers");
 
 var access_token = null
 
@@ -57,6 +57,14 @@ module.exports.DropboxAuth = async (req, res, next) => {
     OAuthcache.set(state, req.session.id, 6000);
     // get authentication URL and redirect
 
+    // Generate a code verifier and code challenge
+    let codeVerifier = base64URLEncode(crypto.randomBytes(32));
+    let codeChallenge = base64URLEncode(await sha256(codeVerifier));
+    
+    // Save the code verifier for later use in the token exchange
+    req.session.codeVerifier = codeVerifier;
+
+
     const authUrl = await dropboxOAuth2.auth.getAuthenticationUrl(
       process.env.URL_ADDRESS + process.env.OAUTH_REDIRECT_URL,
       state,
@@ -64,7 +72,8 @@ module.exports.DropboxAuth = async (req, res, next) => {
       "legacy",
       [],
       "none",
-      true
+      true,
+      codeChallenge
     );
 
     res.redirect(authUrl);
@@ -109,6 +118,9 @@ module.exports.DropboxAuthCallback = async (req, res, next) => {
     return next(new Error("session expired or invalid state"));
   }
 
+  // Retrieve the saved code verifier
+  let codeVerifier = req.session.codeVerifier;
+
   if (req.query.code) {
     try {
       console.log(process.env.URL_ADDRESS + process.env.OAUTH_REDIRECT_URL,
@@ -116,8 +128,9 @@ module.exports.DropboxAuthCallback = async (req, res, next) => {
      
       let token = await dropboxOAuth2.auth.getAccessTokenFromCode(
         process.env.URL_ADDRESS + process.env.OAUTH_REDIRECT_URL,
-        req.query.code
-      ).then((data)=>{console.log(data)}).catch((error)=>{console.log(error)});
+        req.query.code,
+        codeVerifier
+      )
 
       // store token and invalidate state
       req.session.token = token;
