@@ -111,6 +111,8 @@ module.exports.DropboxAuthCallback = async (req, res, next) => {
 
   if (req.query.code) {
     try {
+      console.log(process.env.URL_ADDRESS + process.env.OAUTH_REDIRECT_URL,
+        req.query.code)
       let token = await dropboxOAuth2.auth.getAccessTokenFromCode(
         process.env.URL_ADDRESS + process.env.OAUTH_REDIRECT_URL,
         req.query.code
@@ -128,8 +130,6 @@ module.exports.DropboxAuthCallback = async (req, res, next) => {
       process.env.ACCESS_TOKEN = access_token;
 
       res.send("Authentication successful! " + access_token);
-
-      res.redirect("/AuthCheck");
     } catch (error) {
       return next(error);
     }
