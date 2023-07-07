@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const { upload } = require("./lib/index");
 const { clearUploadsFolder } = require("../utils/EmptyDirectory");;
 const { dropboxOAuth2, OAuthcache } = require("../utils/OAuth");
-const path = require("path")
+const path = require("path");
 
 var access_token = null
 
@@ -113,10 +113,11 @@ module.exports.DropboxAuthCallback = async (req, res, next) => {
     try {
       console.log(process.env.URL_ADDRESS + process.env.OAUTH_REDIRECT_URL,
         req.query.code)
+     
       let token = await dropboxOAuth2.auth.getAccessTokenFromCode(
         process.env.URL_ADDRESS + process.env.OAUTH_REDIRECT_URL,
         req.query.code
-      );
+      ).then((data)=>{console.log(data)}).catch((error)=>{console.log(error)});
 
       // store token and invalidate state
       req.session.token = token;
