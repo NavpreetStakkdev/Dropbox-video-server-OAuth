@@ -1,11 +1,11 @@
 const fs = require("fs");
 const crypto = require("crypto");
 const { upload } = require("./lib/index");
-const { clearUploadsFolder } = require("../utils/EmptyDirectory");;
+const { clearUploadsFolder } = require("../utils/EmptyDirectory");
 const { dropboxOAuth2, OAuthcache } = require("../utils/OAuth");
 const { base64URLEncode, sha256 } = require("../utils/Helpers");
 
-var access_token = null
+var access_token = null;
 
 module.exports.Root = async (req, res, next) => {
   const documentation = `
@@ -17,7 +17,7 @@ module.exports.Root = async (req, res, next) => {
   3. To Add files to Your Dropbox Account, you can use the Upload Route (POST) with the Video in the form-data request body. A demonstration has been attached following this Prompt.
   `;
 
-  const imagePath = "/image.png"
+  const imagePath = "/image.png";
 
   res.send(`
     Congrats! You are on the Dropbox-video-server 🤞. To Start Saving your Content, access the /upload route.
@@ -28,7 +28,6 @@ module.exports.Root = async (req, res, next) => {
   `);
 };
 
-
 module.exports.RouteUnavailable = async (req, res, next) => {
   res.status(200).json({
     message: "Route Not available please check and Try again ☹. ",
@@ -37,10 +36,10 @@ module.exports.RouteUnavailable = async (req, res, next) => {
 
 module.exports.AuthCheck = async (req, res, next) => {
   if (req.session.token) {
-    message="Congrats you are Authenticated 🤞."
-  }
-  else{
-    message="Oops 😵, You are not Authenticated to get your personal Authentication with the Video server use route /dropbox-auth."
+    message = "Congrats you are Authenticated 🤞.";
+  } else {
+    message =
+      "Oops 😵, You are not Authenticated to get your personal Authentication with the Video server use route /dropbox-auth.";
   }
   res.status(200).json({
     message: "Congrats you are Authenticated 🤞.",
@@ -60,10 +59,9 @@ module.exports.DropboxAuth = async (req, res, next) => {
     // Generate a code verifier and code challenge
     let codeVerifier = base64URLEncode(crypto.randomBytes(32));
     let codeChallenge = base64URLEncode(await sha256(codeVerifier));
-    
+
     // Save the code verifier for later use in the token exchange
     req.session.codeVerifier = codeVerifier;
-
 
     const authUrl = await dropboxOAuth2.auth.getAuthenticationUrl(
       process.env.URL_ADDRESS + process.env.OAUTH_REDIRECT_URL,
@@ -78,7 +76,7 @@ module.exports.DropboxAuth = async (req, res, next) => {
 
     res.redirect(authUrl);
   } else {
-    const tokenResponse=req.session.token.result
+    const tokenResponse = req.session.token.result;
     dropboxOAuth2.auth.setAccessToken(tokenResponse.access_token);
     dropboxOAuth2.auth.accessToken = tokenResponse.access_token;
     dropboxOAuth2.auth.tokenType = tokenResponse.token_type;
@@ -94,12 +92,16 @@ module.exports.DropboxAuth = async (req, res, next) => {
 
     // if a token exists, it can be used to access Dropbox resources
     try {
-      let account_details = await dropboxOAuth2.usersGetCurrentAccount()
+      let account_details = await dropboxOAuth2.usersGetCurrentAccount();
       let display_name = account_details.result.name.display_name;
-      console.log(display_name)
+      console.log(display_name);
       // dropboxOAuth2.auth.setAccessToken(null); // clean up token
 
-      res.send( "Welcome " + display_name + " you have been successsfully authenticated and your app is ready to use! 🥂");
+      res.send(
+        "Welcome " +
+          display_name +
+          " you have been successsfully authenticated and your app is ready to use! 🥂"
+      );
     } catch (error) {
       dropboxOAuth2.auth.setAccessToken(null);
       next(error);
@@ -123,15 +125,20 @@ module.exports.DropboxAuthCallback = async (req, res, next) => {
 
   if (req.query.code) {
     try {
-      console.log(process.env.URL_ADDRESS + process.env.OAUTH_REDIRECT_URL,
-        req.query.code)
-     
-      let token = await dropboxOAuth2.auth.getAccessTokenFromCode(
+      console.log(
         process.env.URL_ADDRESS + process.env.OAUTH_REDIRECT_URL,
-        req.query.code,
-        codeVerifier
-      )
-
+        req.query.code
+      );
+      let token;
+      try {
+        token = await dropboxOAuth2.auth.getAccessTokenFromCode(
+          process.env.URL_ADDRESS + process.env.OAUTH_REDIRECT_URL,
+          req.query.code,
+          codeVerifier
+        );
+      } catch (error) {
+        console.log(error);
+      }
       // store token and invalidate state
       req.session.token = token;
       OAuthcache.del(state);
