@@ -62,6 +62,8 @@ module.exports.DropboxAuth = async (req, res, next) => {
 
     // Save the code verifier for later use in the token exchange
     req.session.codeVerifier = codeVerifier;
+    dropboxOAuth2.auth.setCodeVerifier(codeVerifier)
+    dropboxOAuth2.auth.setClientSecret(process.env.APP_SECRET)
 
     const authUrl = await dropboxOAuth2.auth.getAuthenticationUrl(
       process.env.URL_ADDRESS + process.env.OAUTH_REDIRECT_URL,
@@ -70,8 +72,7 @@ module.exports.DropboxAuth = async (req, res, next) => {
       "legacy",
       [],
       "none",
-      true,
-      codeChallenge
+      false,
     );
 
     res.redirect(authUrl);
@@ -121,6 +122,7 @@ module.exports.DropboxAuthCallback = async (req, res, next) => {
   }
 
   // Retrieve the saved code verifier
+  const codeVerifierFromSession = dropboxOAuth2.auth.getCodeVerifier();
   let codeVerifier = req.session.codeVerifier;
 
   if (req.query.code) {
